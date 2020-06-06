@@ -2,11 +2,14 @@
 
 import ch.aplu.jcardgame.*;
 import ch.aplu.jgamegrid.*;
-
+import java.io.IOException;
+import java.io.FileReader;
 import java.awt.Color;
 import java.awt.Font;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.Properties;
+import java.io.File;
 
 @SuppressWarnings("serial")
 public class Whist extends CardGame {
@@ -27,32 +30,10 @@ public class Whist extends CardGame {
 
   static final Random random = ThreadLocalRandom.current();
   
-  // return random Enum value
-  public static <T extends Enum<?>> T randomEnum(Class<T> clazz){
-      int x = random.nextInt(clazz.getEnumConstants().length);
-      return clazz.getEnumConstants()[x];
-  }
-  
-  // return random Card from Hand
-  public static Card randomCard(Hand hand){
-      int x = random.nextInt(hand.getNumberOfCards());
-      return hand.get(x);
-  }
- 
-  // return random Card from ArrayList
-  public static Card randomCard(ArrayList<Card> list){
-      int x = random.nextInt(list.size());
-      return list.get(x);
-  }
-  
-  public boolean rankGreater(Card card1, Card card2) {
-	  return card1.getRankId() < card2.getRankId(); // Warning: Reverse rank order of cards (see comment on enum)
-  }
-	 
-  private final String version = "1.0";
+  private static String version;
   public final int nbPlayers = 4;
-  public final int nbStartCards = 13;
-  public final int winningScore = 11;
+  public static int nbStartCards;
+  public static int winningScore;
   private final int handWidth = 400;
   private final int trickWidth = 40;
   private final Deck deck = new Deck(Suit.values(), Rank.values(), "cover");
@@ -68,20 +49,42 @@ public class Whist extends CardGame {
 			  new Location(575, 25),
 			  new Location(650, 575)
 	  };
-  private Actor[] scoreActors = {null, null, null, null };
+  private Actor[] scoreActors = {null
+		  , null, null, null };
   private final Location trickLocation = new Location(350, 350);
   private final Location textLocation = new Location(350, 450);
-  private final int thinkingTime = 100; // original 2000
+  private final int thinkingTime = 2000;
   private Hand[] hands;
   private Location hideLocation = new Location(-500, - 500);
   private Location trumpsActorLocation = new Location(50, 50);
-  private boolean enforceRules=false;
+	private boolean enforceRules=false;
 
   public void setStatus(String string) { setStatusText(string); }
   
 private int[] scores = new int[nbPlayers];
 
 Font bigFont = new Font("Serif", Font.BOLD, 36);
+// return random Enum value
+public static <T extends Enum<?>> T randomEnum(Class<T> clazz){
+    int x = random.nextInt(clazz.getEnumConstants().length);
+    return clazz.getEnumConstants()[x];
+}
+
+// return random Card from Hand
+public static Card randomCard(Hand hand){
+    int x = random.nextInt(hand.getNumberOfCards());
+    return hand.get(x);
+}
+
+// return random Card from ArrayList
+public static Card randomCard(ArrayList<Card> list){
+    int x = random.nextInt(list.size());
+    return list.get(x);
+}
+
+public boolean rankGreater(Card card1, Card card2) {
+	  return card1.getRankId() < card2.getRankId(); // Warning: Reverse rank order of cards (see comment on enum)
+}
 
 private void initScore() {
 	 for (int i = 0; i < nbPlayers; i++) {
@@ -125,7 +128,7 @@ private void initRound() {
 	    // End graphics
  }
 
-private Optional<Integer> playRound() {  // Returns winner, if any
+public Optional<Integer> playRound() {  // Returns winner, if any
 	// Select and display trump suit
 		final Suit trumps = randomEnum(Suit.class);
 		final Actor trumpsActor = new Actor("sprites/"+trumpImage[trumps.ordinal()]);
@@ -222,18 +225,46 @@ private Optional<Integer> playRound() {  // Returns winner, if any
     setStatusText("Initializing...");
     initScore();
     Optional<Integer> winner;
+    
     do { 
       initRound();
       winner = playRound();
-    } while (!winner.isPresent());
+	} 
+	while (winner.isPresent());
     addActor(new Actor("sprites/gameover.gif"), textLocation);
     setStatusText("Game over. Winner is player: " + winner.get());
     refresh();
   }
 
-  public static void main(String[] args)
+  public static void main(String[] args) throws IOException
   {
-	// System.out.println("Working Directory = " + System.getProperty("user.dir"));
+	  FileReader inStream = null;
+	  Properties whistProperties = new Properties();
+
+	  // Default properties
+	  whistProperties.setProperty("nbStartCards", "13");
+	  whistProperties.setProperty("winningScore", "11");
+	  whistProperties.setProperty("seed", "30006");
+	  whistProperties.setProperty("NUM_RANDOM_NPC", "3");
+	  whistProperties.setProperty("NUM_LEGAL_player", "0");
+	  whistProperties.setProperty("NUM_interation_player", "1");
+	  whistProperties.setProperty("version", "1.0");
+	
+	  //read from file
+	  /*
+	  try {
+		  inStream = new FileReader("whist.properties");
+		  whistProperties.load(inStream);
+	  } finally {	
+		   if (inStream != null) {
+				  inStream.close();
+			  }
+	  }
+	  */
+	 //read
+	 nbStartCards = Integer.parseInt(whistProperties.getProperty("nbStartCards")); 
+	 winningScore = Integer.parseInt(whistProperties.getProperty("winningScore")); 
+	 version = whistProperties.getProperty("version"); 
     new Whist();
   }
 
